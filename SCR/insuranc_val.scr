@@ -1,0 +1,500 @@
+#BRANCH 1 CODES
+
+<--start
+trace on
+
+    #======================================================================
+    # Basic configuration
+    #======================================================================
+
+    sv_b=cint(INTBAF.INTBAFC.TbafEventStep)
+    print (sv_b)
+
+    sv_z = REPEXISTS("CUST")
+    IF (sv_z == 0) THEN
+        CREATEREP("CUST")
+    ENDIF
+
+    sv_d = CLASSEXISTS("CUST", "GLBDATA")
+    IF (sv_d == 0) THEN
+        CREATECLASS("CUST", "GLBDATA", 5)
+    ENDIF
+
+    CUST.GLBDATA.Sol_id=""
+    CUST.GLBDATA.scand_flg="N"
+
+    IF(sv_b==0)THEN
+        GOTO STEP0
+    ENDIF
+
+    IF(sv_b==1)THEN
+        GOTO STEP1
+    ENDIF
+
+    IF(sv_b==2)THEN
+        GOTO STEP2
+    ENDIF
+
+STEP0:
+
+    #======================================================================
+    # Identifying field name and data from which F2 is fired
+    #======================================================================
+
+    sv_r = CLASSEXISTS("CUST", "LIMIT")
+    IF (sv_r == 0) THEN
+        CREATECLASS("CUST", "LIMIT", 5)
+    ENDIF
+
+    sv_a = urhk_TBAF_GetCurFldName("")
+    sv_a = B2KTEMP.TEMPSTD.TBAFRESULT
+    print (sv_a)
+    sv_d = sv_a
+
+    sv_b = GETPOSITION(sv_a, '.')
+    print (sv_b)
+    sv_c = STRLEN(sv_a)
+    print (sv_c)
+    sv_a = MID$(sv_a, sv_b, sv_c-sv_b)
+    print (sv_a)
+
+    CUST.LIMIT.CurFieldName = sv_a
+    sv_b = GETPOSITION(sv_a, '.')
+    sv_c = STRLEN(sv_a)
+    sv_a = MID$(sv_a, sv_b, sv_c-sv_b)
+
+    CUST.LIMIT.field_num=sv_a
+    sv_a = urhk_TBAF_InquireFieldValue(CUST.LIMIT.CurFieldName)
+    CUST.LIMIT.CurFieldVal= trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+    print(CUST.LIMIT.field_num)
+
+    CUST.LIMIT.BODDATE=left$(BANCS.STDIN.BODDate,10)
+    print(CUST.LIMIT.BODDATE)
+    
+    #======================================================================
+    # Pickup Code - Insurance ID  for Mode M,D,I,V,C,R,U
+    #======================================================================
+    IF (CUST.LIMIT.field_num == "field_2") THEN
+    #{
+        sv_a = urhk_TBAF_InquireFieldValue("datablk.field_1")
+        CUST.LIMIT.Field1=trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+        print(CUST.LIMIT.Field1)
+        
+        sv_a = urhk_TBAF_InquireFieldValue("datablk.field_2")
+        CUST.LIMIT.Field2=trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+        print(CUST.LIMIT.Field2)
+        
+        IF (CUST.LIMIT.Field1 == "") THEN
+        #{
+            sv_u = urhk_TBAF_DispMesg("Enter Mode")
+            BANCS.OUTPUT.successOrFailure = "F"
+            exitscript
+        #}
+        ENDIF
+        
+        IF ((CUST.LIMIT.Field1 == "M") OR (CUST.LIMIT.Field1 == "D") OR (CUST.LIMIT.Field1 == "V") OR (CUST.LIMIT.Field1 == "R") OR (CUST.LIMIT.Field1 == "C") OR (CUST.LIMIT.Field1 == "I") OR (CUST.LIMIT.Field1 == "U")) THEN
+        #{
+            sv_r = urhk_b2k_printrepos("BANCS")
+            STDWFS.LIMIT.solid = BANCS.STDIN.mySolId
+            print(STDWFS.LIMIT.solid)
+            
+            sv_a = urhk_TBAF_InquireFieldValue("datablk.field_2")
+            sv_a=trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+            sv_c = STRLEN(sv_a)
+            
+            sv_k="bafl0001.datablk.select_clause|"
+            sv_k=sv_k+"CONCAT(RPAD(INSURANCE_ID,22),RPAD(ACCOUNT_NO,16))"
+            print (sv_k)
+            sv_a = urhk_TBAF_SetValue(sv_k)
+            sv_a = urhk_TBAF_SetValue("bafl0001.datablk.from_clause|C_INSURANCE")
+            print(sv_a)
+            
+            IF (CUST.LIMIT.Field1 == "V") THEN
+            #{
+                sv_b = "SOLID='"+STDWFS.LIMIT.solid+"' AND RECORD_STATUS < 51"
+            #}
+            ELSE
+            #{
+                IF ((CUST.LIMIT.Field1 == "R") OR (CUST.LIMIT.Field1 == "C")) THEN
+                #{
+                    sv_b = "SOLID='"+STDWFS.LIMIT.solid+"' AND RECORD_STATUS = 51 AND CLSUSER IS NULL AND RUSER IS NULL"
+                #}
+                ELSE
+                #{                
+                    IF (CUST.LIMIT.Field1 == "U") THEN
+                    #{
+                        sv_b = "SOLID='"+STDWFS.LIMIT.solid+"' AND RECORD_STATUS = 51 AND CLSUSER IS NULL"
+                    #}
+                    ELSE
+                    #{
+                        IF ((CUST.LIMIT.Field1 == "M") OR (CUST.LIMIT.Field1 == "D")) THEN
+                        #{
+                            sv_b = "SOLID='"+STDWFS.LIMIT.solid+"' AND RECORD_STATUS < 51 AND RECORD_STATUS <> 21"
+                        #}
+                        ELSE
+                        #{
+                            sv_b = "SOLID='"+STDWFS.LIMIT.solid+"' AND RECORD_STATUS IN (1,11,21,51,71)"
+                        #}
+                        ENDIF
+                    #}
+                    ENDIF    
+                #}
+                ENDIF
+            #}
+            ENDIF
+            
+            sv_a = "bafl0001.datablk.where_clause_1|" + sv_b
+            sv_a = urhk_TBAF_SetValue(sv_a)
+            sv_a = "bafl0001.datablk.where_clause_2|"
+            sv_a = urhk_TBAF_SetValue(sv_a)
+            sv_a = "bafl0001.datablk.where_clause_3|"
+            sv_a = urhk_TBAF_SetValue(sv_a)
+            sv_a = urhk_TBAF_SetValue("bafl0001.datablk.column_header|Insurance ID         Account Number")
+            sv_a = urhk_TBAF_SetValue("bafl0001.datablk.header_subtitle|     LIST OF INSURANCE IDS")
+            sv_a = urhk_TBAF_SetReplayKey("bafl0001.datablk.key-f2")
+            sv_a = urhk_TBAF_SetKeyScript("bafl0001.listblk.key-listval|insuranc_shiftf4.scr|0")
+            
+            CUST.LIMIT.sel_field_length   =   "90"
+            CUST.LIMIT.selValue = " "
+            sv_a = urhk_B2K_ShowParamAcptFrm("bafl0001")
+
+            sv_a = CUST.LIMIT.selValue
+            sv_i = CINT(CUST.LIMIT.sel_field_length)
+            print(sv_a)
+            
+            sv_e = trim(MID$(sv_a,0,22))
+            print (sv_e)
+            sv_f = trim(MID$(sv_a,22,16))
+            print (sv_f)
+                            
+            sv_c = "datablk.field_2|" + sv_e
+            sv_r = urhk_TBAF_ChangeFieldValue(sv_c)
+            
+            sv_c = "datablk.field_3|" + sv_f
+            sv_r = urhk_TBAF_ChangeFieldValue(sv_c)
+            
+            BANCS.OUTPUT.successOrFailure = "F"
+            exitscript
+        #}
+        ENDIF
+    #}
+    ENDIF
+       
+    #======================================================================
+    # Pickup Code - Type of Asset
+    #======================================================================
+    IF (CUST.LIMIT.field_num == "field_5") THEN
+    #{
+        sv_a = urhk_TBAF_InquireFieldValue("datablk.field_1")
+        CUST.LIMIT.Field1=trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+        print(CUST.LIMIT.Field1)
+        
+        sv_a = urhk_TBAF_InquireFieldValue("datablk.field_2")
+        CUST.LIMIT.Field2=trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+        print(CUST.LIMIT.Field2)
+        
+        sv_a = urhk_TBAF_InquireFieldValue("datablk.field_3")
+        CUST.LIMIT.Field3=trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+        print(CUST.LIMIT.Field3)
+        
+        IF (CUST.LIMIT.Field1 == "") THEN
+        #{
+            sv_u = urhk_TBAF_DispMesg("Enter Mode")
+            BANCS.OUTPUT.successOrFailure = "F"
+            exitscript
+        #}
+        ENDIF
+        
+        IF ((CUST.LIMIT.Field2 == "") AND (CUST.LIMIT.Field1 == "M")) THEN
+        #{
+            sv_u = urhk_TBAF_DispMesg("Enter Insurance ID")
+            BANCS.OUTPUT.successOrFailure = "F"
+            exitscript
+        #}
+        ENDIF
+        
+        IF (CUST.LIMIT.Field3 == "") THEN
+        #{
+            sv_u = urhk_TBAF_DispMesg("Enter Account Number")
+            BANCS.OUTPUT.successOrFailure = "F"
+            exitscript
+        #}
+        ENDIF
+        
+        IF ((CUST.LIMIT.Field1 == "M") OR (CUST.LIMIT.Field1 == "R") OR (CUST.LIMIT.Field1 == "A")) THEN
+        #{
+            sv_r = urhk_b2k_printrepos("BANCS")
+            STDWFS.LIMIT.solid = BANCS.STDIN.mySolId
+            print(STDWFS.LIMIT.solid)
+            
+            sv_a = urhk_TBAF_InquireFieldValue("datablk.field_5")
+            sv_a=trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+            sv_c = STRLEN(sv_a)
+            
+            sv_k="bafl0001.datablk.select_clause|"
+            sv_k=sv_k+"CONCAT(RPAD(SECU_CODE,10),RPAD(SECU_DESC,30))"
+            print (sv_k)
+            sv_a = urhk_TBAF_SetValue(sv_k)
+            sv_a = urhk_TBAF_SetValue("bafl0001.datablk.from_clause|ASM")
+            print(sv_a)
+            
+            sv_b = "DEL_FLG = 'N'"
+                        
+            sv_a = "bafl0001.datablk.where_clause_1|" + sv_b
+            sv_a = urhk_TBAF_SetValue(sv_a)
+            sv_a = "bafl0001.datablk.where_clause_2|"
+            sv_a = urhk_TBAF_SetValue(sv_a)
+            sv_a = "bafl0001.datablk.where_clause_3|"
+            sv_a = urhk_TBAF_SetValue(sv_a)
+            sv_a = urhk_TBAF_SetValue("bafl0001.datablk.column_header|Asset Code       Asset Type")
+            sv_a = urhk_TBAF_SetValue("bafl0001.datablk.header_subtitle|     LIST OF ASSETS")
+            sv_a = urhk_TBAF_SetReplayKey("bafl0001.datablk.key-f2")
+            sv_a = urhk_TBAF_SetKeyScript("bafl0001.listblk.key-listval|insuranc_shiftf4.scr|0")
+            
+            CUST.LIMIT.sel_field_length   =   "90"
+            CUST.LIMIT.selValue = " "
+            sv_a = urhk_B2K_ShowParamAcptFrm("bafl0001")
+
+            sv_a = CUST.LIMIT.selValue
+            sv_i = CINT(CUST.LIMIT.sel_field_length)
+            print(sv_a)
+            
+            sv_e = trim(MID$(sv_a,0,10))
+            print (sv_e)
+            
+            sv_f = trim(MID$(sv_a,10,30))
+            print (sv_f)
+                            
+            sv_c = "datablk.field_5|" + sv_e
+            sv_r = urhk_TBAF_ChangeFieldValue(sv_c)
+            
+            sv_c = "datablk.field_22|" + sv_f
+            sv_r = urhk_TBAF_ChangeFieldValue(sv_c)
+            
+            STDWFS.LIMIT.ASSETNAME = sv_f
+            print (STDWFS.LIMIT.ASSETNAME)
+
+            BANCS.OUTPUT.successOrFailure = "F"
+            exitscript
+        #}
+        ENDIF
+    #}
+    ENDIF     
+    
+    #======================================================================
+    # Pickup Code - Insurance Company
+    #======================================================================
+    IF (CUST.LIMIT.field_num == "field_10") THEN
+    #{
+        sv_a = urhk_TBAF_InquireFieldValue("datablk.field_1")
+        CUST.LIMIT.Field1=trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+        print(CUST.LIMIT.Field1)
+        
+        sv_a = urhk_TBAF_InquireFieldValue("datablk.field_2")
+        CUST.LIMIT.Field2=trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+        print(CUST.LIMIT.Field2)
+        
+        sv_a = urhk_TBAF_InquireFieldValue("datablk.field_3")
+        CUST.LIMIT.Field3=trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+        print(CUST.LIMIT.Field3)
+        
+        IF (CUST.LIMIT.Field1 == "") THEN
+        #{
+            sv_u = urhk_TBAF_DispMesg("Enter Mode")
+            BANCS.OUTPUT.successOrFailure = "F"
+            exitscript
+        #}
+        ENDIF
+        
+        IF ((CUST.LIMIT.Field2 == "") AND (CUST.LIMIT.Field1 == "M")) THEN
+        #{
+            sv_u = urhk_TBAF_DispMesg("Enter Insurance ID")
+            BANCS.OUTPUT.successOrFailure = "F"
+            exitscript
+        #}
+        ENDIF
+        
+        IF (CUST.LIMIT.Field3 == "") THEN
+        #{
+            sv_u = urhk_TBAF_DispMesg("Enter Account Number")
+            BANCS.OUTPUT.successOrFailure = "F"
+            exitscript
+        #}
+        ENDIF
+        
+        IF ((CUST.LIMIT.Field1 == "M") OR (CUST.LIMIT.Field1 == "R") OR (CUST.LIMIT.Field1 == "A")) THEN
+        #{
+            sv_r = urhk_b2k_printrepos("BANCS")
+            STDWFS.LIMIT.solid = BANCS.STDIN.mySolId
+            print(STDWFS.LIMIT.solid)
+            
+            sv_a = urhk_TBAF_InquireFieldValue("datablk.field_10")
+            sv_a=trim(B2KTEMP.TEMPSTD.TBAFRESULT)
+            sv_c = STRLEN(sv_a)
+            
+            sv_k="bafl0001.datablk.select_clause|"
+            sv_k=sv_k+"CONCAT(RPAD(SUB_CODE,5),RPAD(CODE_DESCRIPTION,51))"
+            print (sv_k)
+            sv_a = urhk_TBAF_SetValue(sv_k)
+            sv_a = urhk_TBAF_SetValue("bafl0001.datablk.from_clause|C_REFCODE")
+            print(sv_a)
+            
+            sv_b = "MAIN_CODE = 1120 AND SUB_CODE <> 0 AND DEL_FLAG = 'N'"
+                        
+            sv_a = "bafl0001.datablk.where_clause_1|" + sv_b
+            sv_a = urhk_TBAF_SetValue(sv_a)
+            sv_a = "bafl0001.datablk.where_clause_2|"
+            sv_a = urhk_TBAF_SetValue(sv_a)
+            sv_a = "bafl0001.datablk.where_clause_3|"
+            sv_a = urhk_TBAF_SetValue(sv_a)
+            sv_a = urhk_TBAF_SetValue("bafl0001.datablk.column_header|Company Name     Company Name Desc")
+            sv_a = urhk_TBAF_SetValue("bafl0001.datablk.header_subtitle|     LIST OF COMPANIES")
+            sv_a = urhk_TBAF_SetReplayKey("bafl0001.datablk.key-f2")
+            sv_a = urhk_TBAF_SetKeyScript("bafl0001.listblk.key-listval|insuranc_shiftf4.scr|0")
+            
+            CUST.LIMIT.sel_field_length   =   "90"
+            CUST.LIMIT.selValue = " "
+            sv_a = urhk_B2K_ShowParamAcptFrm("bafl0001")
+
+            sv_a = CUST.LIMIT.selValue
+            sv_i = CINT(CUST.LIMIT.sel_field_length)
+            print(sv_a)
+            
+            sv_e = trim(MID$(sv_a,0,5))
+            print (sv_e)
+            
+            sv_f = trim(MID$(sv_a,5,51))
+            print (sv_f)
+                            
+            sv_c = "datablk.field_10|" + sv_f
+            sv_r = urhk_TBAF_ChangeFieldValue(sv_c)
+            
+            sv_c = "datablk.field_27|" + sv_e
+            sv_r = urhk_TBAF_ChangeFieldValue(sv_c)
+            
+            STDWFS.LIMIT.COMPANYNAME = sv_f
+            print (STDWFS.LIMIT.COMPANYNAME)
+
+            BANCS.OUTPUT.successOrFailure = "F"
+            exitscript
+        #}
+        ENDIF
+    #}
+    ENDIF
+      
+exitscript
+
+STEP1:
+
+    sv_z = urhk_TBAF_GetCurFldName("")
+    sv_a = B2KTEMP.TEMPSTD.TBAFRESULT
+    print(sv_a)
+    
+    IF (sv_a=="bafi2020.datablk.field_1") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter a valid mode : A-Add;M-Modify;D-Delete;I-Inquire;V-Verify;C-Close;R-Renew;U-Update")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF
+
+    IF (sv_a=="bafi2020.datablk.field_2") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Insurance ID. <LIST> available.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF
+
+    IF (sv_a=="bafi2020.datablk.field_3") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Account Number. <LIST> available.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF 
+    
+    IF (sv_a=="bafi2020.datablk.field_4") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Policy Number.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF
+    
+    IF (sv_a=="bafi2020.datablk.field_5") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Type of Asset. <LIST> available.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF 
+    
+    IF (sv_a=="bafi2020.datablk.field_6") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Insured From Date.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF 
+    
+    IF (sv_a=="bafi2020.datablk.field_7") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Insured To Date.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF 
+    
+    IF (sv_a=="bafi2020.datablk.field_8") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Insured Amount.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF 
+    
+    IF (sv_a=="bafi2020.datablk.field_9") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Premium Amount.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF 
+    
+    IF (sv_a=="bafi2020.datablk.field_10") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Insurance Company Name. <LIST> available.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF 
+    
+    IF (sv_a=="bafi2020.datablk.field_11") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Insurance Company Branch Name.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF 
+    
+    IF (sv_a=="bafi2020.datablk.field_12") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Closure Reason.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF 
+    
+    IF (sv_a=="bafi2020.datablk.field_13") THEN
+    #{
+        sv_u = urhk_TBAF_DispMesg("Enter Y for submit, N for cancel.")
+        BANCS.OUTPUT.successOrFailure = "F"
+        exitscript
+    #}
+    ENDIF 
+
+exitscript
+
+#trace off
+end-->        

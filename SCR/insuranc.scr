@@ -1,0 +1,1313 @@
+#BRANCH 1 CODES
+
+<--start
+trace on
+
+#======================================================================
+# 1. Creating base variables, classes etc
+#======================================================================
+
+    IF (REPEXISTS("STDWFS") == 0) THEN
+            CREATEREP("STDWFS")
+    ENDIF
+
+    IF (CLASSEXISTS("STDWFS", "LIMIT")) THEN
+            DELETECLASS("STDWFS", "LIMIT")
+    ENDIF
+
+    CREATECLASS("STDWFS", "LIMIT",5)
+
+    sv_r = urhk_b2k_printrepos("BANCS")
+
+    STDWFS.LIMIT.solid = BANCS.STDIN.mySolId
+    print(STDWFS.LIMIT.solid)
+
+    STDWFS.LIMIT.userid = BANCS.STDIN.userId
+    print(STDWFS.LIMIT.userid)
+
+    STDWFS.LIMIT.roleid = BANCS.STDIN.roleId
+    print(STDWFS.LIMIT.roleid)
+    
+    STDWFS.LIMIT.BODDATE=left$(BANCS.STDIN.BODDate,10)
+    print(STDWFS.LIMIT.BODDATE)    
+
+    STDWFS.LIMIT.proceedflg = "N"
+
+    sv_b = CINT(STDWFS.WFSINPUT.NextStep)
+
+    IF ( sv_b == 0 ) THEN
+            GOTO STEP0
+    ENDIF
+
+    IF ( sv_b == 1 ) THEN
+            GOTO STEP1
+    ENDIF
+
+    IF ( sv_b == 2 ) THEN
+            GOTO STEP2
+    ENDIF
+
+STEP0:
+
+    #======================================================================
+    # 2. Set Field Description, Data Length, Default Values
+    #======================================================================
+
+    STDWFS.LIMIT.WorkFlowDesc = "INSURANCE"
+    STDWFS.WFSINPARAMVAL.FormTitle= "INSURANCE REGISTER"
+
+    STDWFS.WFSINPARAMVAL.MODE = "Mode"
+    STDWFS.WFSINPARAMLEN.MODE = "1"
+    STDWFS.WFSOUTPARAM.MODE ="A"
+    
+    STDWFS.WFSINPARAMVAL.INSURANCEID = "Insurance ID"
+    STDWFS.WFSINPARAMLEN.INSURANCEID = "20"
+    STDWFS.WFSOUTPARAM.INSURANCEID =""
+
+    STDWFS.WFSINPARAMVAL.ACCNO = "Account Number"
+    STDWFS.WFSINPARAMLEN.ACCNO = "16"
+    STDWFS.WFSLIST.ACCNO = ("ACCT_MAST_LIST")
+    STDWFS.WFSOUTPARAM.ACCNO =""
+    
+    STDWFS.WFSINPARAMVAL.POLICYNUM = "Policy Number"
+    STDWFS.WFSINPARAMLEN.POLICYNUM = "20"
+    STDWFS.WFSOUTPARAM.POLICYNUM =""
+    
+    STDWFS.WFSINPARAMVAL.ASSETTYPE = "Type of Asset"
+    STDWFS.WFSINPARAMLEN.ASSETTYPE = "10"
+    STDWFS.WFSOUTPARAM.ASSETTYPE =""   
+
+    STDWFS.WFSINPARAMVAL.INSUREDFROM = "Insured From"
+    STDWFS.WFSINPARAMLEN.INSUREDFROM = "10"
+    STDWFS.WFSOUTPARAM.INSUREDFROM = ""
+
+    STDWFS.WFSINPARAMVAL.INSUREDTILL = "Insured To"
+    STDWFS.WFSINPARAMLEN.INSUREDTILL = "10"
+    STDWFS.WFSOUTPARAM.INSUREDTILL =""    
+
+    STDWFS.WFSINPARAMVAL.INSUREDAMOUNT = "Insured Amount"
+    STDWFS.WFSINPARAMLEN.INSUREDAMOUNT = "20"
+    STDWFS.WFSOUTPARAM.INSUREDAMOUNT =""     
+
+    STDWFS.WFSINPARAMVAL.PREMIUM = "Premium Amount"
+    STDWFS.WFSINPARAMLEN.PREMIUM = "20"
+    STDWFS.WFSOUTPARAM.PREMIUM =""     
+
+    STDWFS.WFSINPARAMVAL.COMPANY = "Insurance Company"
+    STDWFS.WFSINPARAMLEN.COMPANY = "50"
+    STDWFS.WFSOUTPARAM.COMPANY =""     
+    
+    STDWFS.WFSINPARAMVAL.BRANCH = "Branch Name"
+    STDWFS.WFSINPARAMLEN.BRANCH = "20"
+    STDWFS.WFSOUTPARAM.BRANCH =""      
+    
+    STDWFS.WFSINPARAMVAL.REASON = "Closure Reason"
+    STDWFS.WFSINPARAMLEN.REASON = "50"
+    STDWFS.WFSOUTPARAM.REASON ="" 
+    
+    STDWFS.WFSINPARAMVAL.SUBMITFLAG = "Submit (Y/N)"
+    STDWFS.WFSINPARAMLEN.SUBMITFLAG = "1"
+    STDWFS.WFSOUTPARAM.SUBMITFLAG ="C"
+                    
+    #======================================================================
+    # 3. Validations
+    #======================================================================
+    
+STDWFS.LIMIT.errCode="Y"
+STDWFS.LIMIT.modchk="Y"
+STDWFS.LIMIT.secondtimeflag="N"
+
+WHILE (STDWFS.LIMIT.errCode =="Y")
+#{
+
+    #======================================================================
+    # A. Hide unwanted fields
+    #======================================================================
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_14|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_15|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_16|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_17|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_18|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_19|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_20|P")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_21|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_22|P")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_23|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_24|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_25|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_26|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_27|P")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_28|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_29|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_30|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_31|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_32|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_33|H")
+    sv_a = urhk_TBAF_SetAttrib("bafi2020.datablk.field_34|H")
+
+    #========================================================
+    # Calling scripts on F1 (Help) and F2 (List) key press
+    #========================================================
+    
+    # Calling script for F2 (List)
+    sv_r = urhk_TBAF_SetKeyScript("bafi2020.datablk.key-f0|insuranc_val.scr|0")
+
+    # Calling script for F1 (Help)
+    sv_a = urhk_TBAF_SetKeyScript("bafi2020.datablk.key-help|insuranc_val.scr|1")
+
+    sv_a = urhk_WFS_ShowParamAcptFrm("")
+
+    IF ( STDWFS.WFSOUTPUT.ErrorCode == "-9999") THEN
+    #{
+        STDWFS.WFSINPUT.NextStep = "0"
+        STDWFS.WFSINPUT.WfsStatus = "D"
+        EXITSCRIPT
+    #}
+    ENDIF
+
+    #======================================================================
+    # Assigning the field values to variables
+    #======================================================================
+
+    STDWFS.LIMIT.MODE = toupper(STDWFS.WFSOUTPARAM.MODE)
+    print(STDWFS.LIMIT.MODE)
+
+    STDWFS.LIMIT.INSURANCEID = toupper(STDWFS.WFSOUTPARAM.INSURANCEID)
+    print(STDWFS.LIMIT.INSURANCEID)
+
+    STDWFS.LIMIT.ACCNO = toupper(STDWFS.WFSOUTPARAM.ACCNO)
+    print(STDWFS.LIMIT.ACCNO)
+    
+    STDWFS.LIMIT.POLICYNUM = toupper(STDWFS.WFSOUTPARAM.POLICYNUM)
+    print(STDWFS.LIMIT.POLICYNUM)
+
+    STDWFS.LIMIT.ASSETTYPE = toupper(STDWFS.WFSOUTPARAM.ASSETTYPE)
+    print(STDWFS.LIMIT.ASSETTYPE)
+
+    STDWFS.LIMIT.INSUREDFROM = toupper(STDWFS.WFSOUTPARAM.INSUREDFROM)
+    print(STDWFS.LIMIT.INSUREDFROM)
+
+    STDWFS.LIMIT.INSUREDTILL = toupper(STDWFS.WFSOUTPARAM.INSUREDTILL)
+    print(STDWFS.LIMIT.INSUREDTILL)
+
+    STDWFS.LIMIT.INSUREDAMOUNT = toupper(STDWFS.WFSOUTPARAM.INSUREDAMOUNT)
+    print(STDWFS.LIMIT.INSUREDAMOUNT)
+
+    STDWFS.LIMIT.PREMIUM = toupper(STDWFS.WFSOUTPARAM.PREMIUM)
+    print(STDWFS.LIMIT.PREMIUM)
+
+    STDWFS.LIMIT.COMPANY = toupper(STDWFS.WFSOUTPARAM.COMPANY)
+    print(STDWFS.LIMIT.COMPANY)
+
+    STDWFS.LIMIT.BRANCH = toupper(STDWFS.WFSOUTPARAM.BRANCH)
+    print(STDWFS.LIMIT.BRANCH)
+
+    STDWFS.LIMIT.REASON = toupper(STDWFS.WFSOUTPARAM.REASON)
+    print(STDWFS.LIMIT.REASON)
+
+    STDWFS.LIMIT.SUBMITFLAG = toupper(STDWFS.WFSOUTPARAM.SUBMITFLAG)
+    print(STDWFS.LIMIT.SUBMITFLAG)         
+    
+    #======================================================================
+    # SCRIPT LEVEL VALIDATIONS
+    #======================================================================
+        
+    STDWFS.LIMIT.ErrFlg = "N"
+    print( STDWFS.LIMIT.ErrFlg)
+    
+    IF (STDWFS.LIMIT.MODE == "A") THEN
+    #{
+        sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_1|P")
+        sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_2|P") 
+    #}
+    ENDIF
+    
+    IF (STDWFS.LIMIT.MODE != "C") THEN
+    #{
+        sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_12|P")
+    #}
+    ENDIF
+        
+    IF (STDWFS.LIMIT.modchk == "N") THEN
+    #{ 
+        sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_1|P")
+        sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_2|P")   
+        
+        IF (STDWFS.LIMIT.MODE == "R") THEN
+        #{
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_3|P")
+        #}
+        ENDIF
+        
+        IF (STDWFS.LIMIT.MODE == "U") THEN
+        #{
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_3|P")
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_5|P")            
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_10|P")
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_11|P")
+        #}
+        ENDIF
+        
+        IF ((STDWFS.LIMIT.MODE == "C") OR (STDWFS.LIMIT.MODE == "V") OR (STDWFS.LIMIT.MODE == "I") OR (STDWFS.LIMIT.MODE == "D")) THEN
+        #{
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_3|P")
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_4|P")
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_5|P")
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_6|P")
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_7|P")
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_8|P")
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_9|P")
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_10|P")
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_11|P")
+            sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_12|P")
+            
+            IF (STDWFS.LIMIT.MODE == "I") THEN
+            #{
+                sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_13|P")
+            #}
+            ENDIF
+        #}
+        ENDIF
+    #}
+    ENDIF
+    
+    IF ((STDWFS.LIMIT.modchk == "Y") AND (STDWFS.LIMIT.secondtimeflag == "N")) THEN
+    #{ 
+        STDWFS.LIMIT.ACCNAME=""
+        STDWFS.LIMIT.COMPANYNAME="" 
+        STDWFS.LIMIT.ASSETNAME =""
+    #}
+    ENDIF       
+    
+    #======================================================================
+    #SCRIPT LEVEL VALIDATIONS - Mode
+    #======================================================================
+    IF ((STDWFS.LIMIT.MODE != "A") AND (STDWFS.LIMIT.MODE != "M") AND (STDWFS.LIMIT.MODE != "D") AND (STDWFS.LIMIT.MODE != "I") AND (STDWFS.LIMIT.MODE != "V") AND (STDWFS.LIMIT.MODE != "C") AND (STDWFS.LIMIT.MODE != "R") AND (STDWFS.LIMIT.MODE != "U")) THEN
+    #{
+        sv_o="00Enter valid mode:A-Add;M-Modify;D-Delete;I-Inquire;V-Verify;C-Close;R-Renew;U-Update Policy Number"
+        STDWFS.LIMIT.ErrFlg = "Y"
+        GOTO RPLYLOOP
+    #}
+    ENDIF 
+    
+    #======================================================================
+    #SCRIPT LEVEL VALIDATIONS - Insurance ID
+    #======================================================================
+    IF ((STDWFS.LIMIT.MODE != "A") AND (STDWFS.LIMIT.INSURANCEID == "") AND (STDWFS.LIMIT.ErrFlg == "N"))  THEN
+    #{
+        sv_o="01Insurance ID can't be empty."
+        STDWFS.LIMIT.ErrFlg = "Y"
+        GOTO RPLYLOOP
+    #}
+    ENDIF
+    
+    IF (STDWFS.LIMIT.MODE != "A") THEN
+    #{
+        sv_b=urhk_B2k_isStringNumeric(STDWFS.LIMIT.INSURANCEID)
+        IF (( sv_b != 0 ) AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+        #{
+            sv_o="01Insurance ID should contain only numbers."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+    #}
+    ENDIF
+    
+    #======================================================================
+    #POPULATING FIELDS - In case of Modes other than Add
+    #======================================================================
+    IF (STDWFS.LIMIT.MODE != "A") THEN 
+    #{
+        IF (STDWFS.LIMIT.modchk == "Y") THEN
+        #{
+            STDWFS.LIMIT.datastring = STDWFS.LIMIT.MODE+"^"+STDWFS.LIMIT.INSURANCEID+"^"+STDWFS.LIMIT.ACCNO+"^"+STDWFS.LIMIT.POLICYNUM+"^"+STDWFS.LIMIT.ASSETTYPE+"^"+STDWFS.LIMIT.INSUREDFROM+"^"+STDWFS.LIMIT.INSUREDTILL+"^"+STDWFS.LIMIT.INSUREDAMOUNT+"^"+STDWFS.LIMIT.PREMIUM+"^"+STDWFS.LIMIT.COMPANY+"^"+STDWFS.LIMIT.BRANCH+"^"+STDWFS.LIMIT.REASON+"^"+STDWFS.LIMIT.solid+"^"+STDWFS.LIMIT.userid+"^"+STDWFS.LIMIT.BODDATE+"^1"
+            print(STDWFS.LIMIT.datastring)
+            
+            sv_a = "res,res1,res2,res3,res4,res5,res6,res7,res8,res9,res10,res11,res12,res13,res14|SELECT TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',1)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',2)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',3)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',4)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',5)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',6)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',7)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',8)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',9)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',10)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',11)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',12)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',13)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',14)),TRIM(PKGSMGBCOMMON.DELIMITEDTEXT(DATASTRING,'^',15)) FROM (SELECT PKGINSURANCE.VALIDATE_INSURANCE('" + STDWFS.LIMIT.datastring + "') DATASTRING FROM  DUAL)"
+            print (sv_a)
+            sv_b = urhk_dbSelect(sv_a)
+            print (sv_b)
+            sv_o = BANCS.OUTPARAM.res
+            
+            STDWFS.LIMIT.recordcut1 = MID$(sv_o,0,1)
+            print(STDWFS.LIMIT.recordcut1)
+                
+            IF (STDWFS.LIMIT.recordcut1 == "F") THEN
+            #{
+                sv_o = MID$(sv_o,1,99)
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP                                        
+            #}
+            ENDIF
+            
+            IF (STDWFS.LIMIT.recordcut1 == "S")  THEN
+            #{
+                                
+                #======================================================================
+                # Split Values & Assign to variables
+                #======================================================================                  
+                sv_c = STRLEN(sv_o)
+                print (sv_c)
+                STDWFS.LIMIT.INSURANCEID = MID$(sv_o,1,sv_c-1)
+                print(STDWFS.LIMIT.INSURANCEID)
+
+                STDWFS.LIMIT.ACCNO = BANCS.OUTPARAM.res1
+                print(STDWFS.LIMIT.ACCNO)
+                
+                STDWFS.LIMIT.POLICYNUM = BANCS.OUTPARAM.res2
+                print(STDWFS.LIMIT.POLICYNUM)
+                    
+                STDWFS.LIMIT.ASSETTYPE = BANCS.OUTPARAM.res3
+                print(STDWFS.LIMIT.ASSETTYPE)
+                
+                STDWFS.LIMIT.INSUREDFROM = BANCS.OUTPARAM.res4
+                print(STDWFS.LIMIT.INSUREDFROM)
+                
+                STDWFS.LIMIT.INSUREDTILL = BANCS.OUTPARAM.res5
+                print(STDWFS.LIMIT.INSUREDTILL)     
+                
+                STDWFS.LIMIT.INSUREDAMOUNT = BANCS.OUTPARAM.res6
+                print(STDWFS.LIMIT.INSUREDAMOUNT)                 
+                           
+                STDWFS.LIMIT.PREMIUM = BANCS.OUTPARAM.res7
+                print(STDWFS.LIMIT.PREMIUM)
+                
+                STDWFS.LIMIT.COMPANY = BANCS.OUTPARAM.res8
+                print(STDWFS.LIMIT.COMPANY)                
+                
+                STDWFS.LIMIT.BRANCH = BANCS.OUTPARAM.res9
+                print(STDWFS.LIMIT.BRANCH)                
+                                
+                STDWFS.LIMIT.REASON = BANCS.OUTPARAM.res10
+                print(STDWFS.LIMIT.REASON)                                         
+
+                STDWFS.LIMIT.ACCNAME = BANCS.OUTPARAM.res11
+                print(STDWFS.LIMIT.ACCNAME)              
+                
+                STDWFS.LIMIT.ASSETNAME = BANCS.OUTPARAM.res12
+                print(STDWFS.LIMIT.ASSETNAME)
+                
+                STDWFS.LIMIT.COMPANYNAME = BANCS.OUTPARAM.res13
+                print(STDWFS.LIMIT.COMPANYNAME)
+                
+                STDWFS.LIMIT.STATUS = BANCS.OUTPARAM.res14
+                print(STDWFS.LIMIT.STATUS)
+                                                                                                                                         
+                #===============================
+                # Disply Fields
+                #===============================  
+                      
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_2|" + STDWFS.LIMIT.INSURANCEID)
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_3|" + STDWFS.LIMIT.ACCNO)
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_4|" + STDWFS.LIMIT.POLICYNUM)
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_5|" + STDWFS.LIMIT.ASSETTYPE)
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_6|" + STDWFS.LIMIT.INSUREDFROM)
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_7|" + STDWFS.LIMIT.INSUREDTILL)
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_8|" + STDWFS.LIMIT.INSUREDAMOUNT)
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_9|" + STDWFS.LIMIT.PREMIUM)
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_10|" + STDWFS.LIMIT.COMPANY)
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_11|" + STDWFS.LIMIT.BRANCH)
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_12|" + STDWFS.LIMIT.REASON)
+                
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_20|" + STDWFS.LIMIT.ACCNAME)   
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_22|" + STDWFS.LIMIT.ASSETNAME)
+                sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_27|" + STDWFS.LIMIT.COMPANYNAME)              
+                
+                sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_1|P")
+                sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_2|P")
+                
+                STDWFS.LIMIT.modchk="N"
+                
+                IF (STDWFS.LIMIT.MODE == "R") THEN
+                #{
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_3|P")
+                #}
+                ENDIF
+                
+                IF (STDWFS.LIMIT.MODE == "U") THEN
+                #{
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_3|P")
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_5|P")
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_10|P")
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_11|P")
+                #}
+                ENDIF
+                
+                IF ((STDWFS.LIMIT.MODE == "I") OR (STDWFS.LIMIT.MODE == "C") OR (STDWFS.LIMIT.MODE == "V") OR (STDWFS.LIMIT.MODE == "D")) THEN 
+                #{
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_3|P")
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_4|P")
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_5|P")
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_6|P")
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_7|P")
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_8|P")
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_9|P")
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_10|P")
+                    sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_11|P")
+                    
+                    IF ((STDWFS.LIMIT.MODE == "I") OR (STDWFS.LIMIT.MODE == "V") OR (STDWFS.LIMIT.MODE == "D")) THEN
+                    #{
+                        sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_12|P")
+                    #}        
+                    ENDIF
+                    
+                    IF (STDWFS.LIMIT.MODE == "I") THEN
+                    #{
+                        sv_b = urhk_TBAF_SetAttrib("bafi2020.datablk.field_13|P")
+                        STDWFS.LIMIT.ErrFlg = "Y"
+                        GOTO ENDLOOP
+                    #}        
+                    ENDIF
+                    
+                #}        
+                ENDIF
+                
+            #}        
+            ENDIF
+            
+        #}
+        ENDIF
+    
+    #}
+    ENDIF
+    
+    IF (STDWFS.LIMIT.MODE != "I") THEN 
+    #{
+    
+        #======================================================================
+        #SCRIPT LEVEL VALIDATIONS - Account Number
+        #======================================================================
+        IF ((STDWFS.LIMIT.ACCNO == "") AND (STDWFS.LIMIT.ErrFlg == "N"))  THEN
+        #{
+            sv_o="01Enter Account Number."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        sv_r=CINT(STDWFS.LIMIT.ACCNO)
+        IF (( sv_r <= 0 ) AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+        #{
+            sv_o="01Account Number should contain only numbers."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        #======================================================================
+        #SCRIPT LEVEL VALIDATIONS - Type of Asset
+        #======================================================================
+        IF ((STDWFS.LIMIT.ASSETTYPE == "") AND (STDWFS.LIMIT.ErrFlg == "N"))  THEN
+        #{
+            IF (STDWFS.LIMIT.MODE == "R") THEN
+            #{
+                sv_o="02Enter Asset Type. List available. Press F2."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            sv_o="03Enter Asset Type. List available. Press F2."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        #======================================================================
+        #SCRIPT LEVEL VALIDATIONS - Date
+        #======================================================================
+        IF ((STDWFS.LIMIT.INSUREDFROM == "") AND (STDWFS.LIMIT.ErrFlg == "N"))  THEN
+        #{
+            IF (STDWFS.LIMIT.MODE == "R") THEN
+            #{
+                sv_o="03Enter Insured From Date."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            IF (STDWFS.LIMIT.MODE == "U") THEN
+            #{
+                sv_o="02Enter Insured From Date."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            sv_o="04Enter Insured From Date."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        sv_b=urhk_B2k_valDate(STDWFS.LIMIT.INSUREDFROM)
+        IF (( sv_b != 0 ) AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+        #{
+            IF (STDWFS.LIMIT.MODE == "R") THEN
+            #{
+                sv_o="03Enter a valid Insured From Date."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+                
+            IF (STDWFS.LIMIT.MODE == "U") THEN
+            #{
+                sv_o="02Enter a valid Insured From Date."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+                
+            sv_o="04Enter a valid Insured From Date."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF 
+        
+        IF ((STDWFS.LIMIT.INSUREDTILL == "") AND (STDWFS.LIMIT.ErrFlg == "N"))  THEN
+        #{
+            IF (STDWFS.LIMIT.MODE == "R") THEN
+            #{
+                sv_o="04Enter Insured Till Date."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            IF (STDWFS.LIMIT.MODE == "U") THEN
+            #{
+                sv_o="03Enter Insured Till Date."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            sv_o="05Enter Insured Till Date."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        sv_b=urhk_B2k_valDate(STDWFS.LIMIT.INSUREDTILL)
+        IF (( sv_b != 0 ) AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+        #{
+            IF (STDWFS.LIMIT.MODE == "R") THEN
+            #{
+                sv_o="04Enter a valid Insured Till Date."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+                
+            IF (STDWFS.LIMIT.MODE == "U") THEN
+            #{
+                sv_o="03Enter a valid Insured Till Date."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+                
+            sv_o="05Enter a valid Insured Till Date."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        #======================================================================
+        #SCRIPT LEVEL VALIDATIONS - Amount
+        #======================================================================
+        IF ((STDWFS.LIMIT.INSUREDAMOUNT == "") AND (STDWFS.LIMIT.ErrFlg == "N"))  THEN
+        #{
+            IF (STDWFS.LIMIT.MODE == "R") THEN
+            #{
+                sv_o="05Enter Insured Amount."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            IF (STDWFS.LIMIT.MODE == "U") THEN
+            #{
+                sv_o="04Enter Insured Amount."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            sv_o="06Enter Insured Amount."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        sv_r=CINT(STDWFS.LIMIT.INSUREDAMOUNT)
+        IF (( sv_r <= 0 ) AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+        #{
+            IF (STDWFS.LIMIT.MODE == "R") THEN
+            #{
+                sv_o="05Enter Insured Amount in Rupees."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            IF (STDWFS.LIMIT.MODE == "U") THEN
+            #{
+                sv_o="04Enter Insured Amount in Rupees."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            sv_o="06Enter Insured Amount in Rupees."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        IF ((STDWFS.LIMIT.PREMIUM == "") AND (STDWFS.LIMIT.ErrFlg == "N"))  THEN
+        #{
+            IF (STDWFS.LIMIT.MODE == "R") THEN
+            #{
+                sv_o="06Enter Premium Amount."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            IF (STDWFS.LIMIT.MODE == "U") THEN
+            #{
+                sv_o="05Enter Premium Amount."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            sv_o="07Enter Premium Amount."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        sv_r=CINT(STDWFS.LIMIT.PREMIUM)
+        IF (( sv_r <= 0 ) AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+        #{
+            IF (STDWFS.LIMIT.MODE == "R") THEN
+            #{
+                sv_o="06Enter Premium Amount in Rupees."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            IF (STDWFS.LIMIT.MODE == "U") THEN
+            #{
+                sv_o="05Enter Premium Amount in Rupees."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            sv_o="07Enter Premium Amount in Rupees."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        #======================================================================
+        #SCRIPT LEVEL VALIDATIONS - Insurance Company and branch
+        #======================================================================
+        IF ((STDWFS.LIMIT.COMPANY == "") AND (STDWFS.LIMIT.ErrFlg == "N"))  THEN
+        #{
+            IF (STDWFS.LIMIT.MODE == "R") THEN
+            #{
+                sv_o="07Enter Insurance Company. List available. Press F2."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            sv_o="08Enter Insurance Company. List available. Press F2."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        IF ((STDWFS.LIMIT.BRANCH == "") AND (STDWFS.LIMIT.ErrFlg == "N"))  THEN
+        #{
+            IF (STDWFS.LIMIT.MODE == "R") THEN
+            #{
+                sv_o="08Enter Insurance Company Branch Location."
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP
+            #}
+            ENDIF
+            
+            sv_o="09Enter Insurance Company Branch Location."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        IF ((STDWFS.LIMIT.MODE == "C") AND (STDWFS.LIMIT.REASON == "") AND (STDWFS.LIMIT.ErrFlg == "N"))THEN
+        #{
+            sv_o="01Enter Reason for Closure."
+            STDWFS.LIMIT.ErrFlg = "Y"
+            GOTO RPLYLOOP
+        #}
+        ENDIF
+        
+        IF (STDWFS.LIMIT.ErrFlg == "N")THEN
+        #{
+            STDWFS.LIMIT.datastring = STDWFS.LIMIT.MODE+"^"+STDWFS.LIMIT.INSURANCEID+"^"+STDWFS.LIMIT.ACCNO+"^"+STDWFS.LIMIT.POLICYNUM+"^"+STDWFS.LIMIT.ASSETTYPE+"^"+STDWFS.LIMIT.INSUREDFROM+"^"+STDWFS.LIMIT.INSUREDTILL+"^"+STDWFS.LIMIT.INSUREDAMOUNT+"^"+STDWFS.LIMIT.PREMIUM+"^"+STDWFS.LIMIT.COMPANY+"^"+STDWFS.LIMIT.BRANCH+"^"+STDWFS.LIMIT.REASON+"^"+STDWFS.LIMIT.solid+"^"+STDWFS.LIMIT.userid+"^"+STDWFS.LIMIT.BODDATE+"^2"
+            print(STDWFS.LIMIT.datastring)
+                
+            sv_a = "res|SELECT TRIM(DATASTRING) FROM (SELECT PKGINSURANCE.VALIDATE_INSURANCE('" + STDWFS.LIMIT.datastring + "') DATASTRING FROM  DUAL)"
+            print (sv_a)
+            sv_b = urhk_dbSelect(sv_a)
+            print (sv_b)
+            sv_o = BANCS.OUTPARAM.res
+                
+            STDWFS.LIMIT.recordcut1 = MID$(sv_o,0,1)
+            print(STDWFS.LIMIT.recordcut1)
+                    
+            IF (STDWFS.LIMIT.recordcut1 == "F") THEN
+            #{
+                sv_o = MID$(sv_o,1,99)
+                STDWFS.LIMIT.ErrFlg = "Y"
+                GOTO RPLYLOOP                                        
+            #}
+            ENDIF
+                
+            IF (STDWFS.LIMIT.recordcut1 == "S")  THEN
+            #{
+                sv_c = STRLEN(sv_o)
+                print (sv_c)
+                
+                STDWFS.LIMIT.ACCNAME = MID$(sv_o,1,sv_c-1)
+                print(STDWFS.LIMIT.ACCNAME)
+                
+                IF (STDWFS.LIMIT.SUBMITFLAG != "Y") THEN
+                #{
+                    IF ((STDWFS.LIMIT.MODE == "A") OR (STDWFS.LIMIT.MODE == "M")) THEN
+                    #{
+                        sv_o="10Enter Y for Submit, N for Cancel."
+                        STDWFS.LIMIT.ErrFlg = "Y"
+                        GOTO RPLYLOOP
+                    #}
+                    ELSE
+                    #{   
+                        IF (STDWFS.LIMIT.MODE == "U") THEN
+                        #{
+                            sv_o="06Enter Y for Submit, N for Cancel."
+                            STDWFS.LIMIT.ErrFlg = "Y"
+                            GOTO RPLYLOOP
+                        #}
+                        ENDIF 
+                        
+                        IF (STDWFS.LIMIT.MODE == "R") THEN
+                        #{
+                            sv_o="09Enter Y for Submit, N for Cancel."
+                            STDWFS.LIMIT.ErrFlg = "Y"
+                            GOTO RPLYLOOP
+                        #}
+                        ELSE
+                        #{
+                            sv_o="01Enter Y for Submit, N for Cancel."
+                            STDWFS.LIMIT.ErrFlg = "Y"
+                            GOTO RPLYLOOP
+                        #}
+                        ENDIF
+                    #}
+                    ENDIF
+                #}
+                ELSE
+                #{
+                    GOTO STEP1
+                #}
+                ENDIF
+                
+            #}
+            ENDIF
+            
+        #}
+        ENDIF
+        
+    #}
+    ENDIF        
+    
+STEP1:
+
+    #=====================================================
+    #Insert code Mode - A
+    #===================================================== 
+    
+    IF ((STDWFS.LIMIT.MODE == "A") AND (STDWFS.LIMIT.SUBMITFLAG == "Y") AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+    #{
+        sv_a = "INSURANCEID|SELECT C_INSUR_SEQ.NEXTVAL FROM DUAL"
+        print (sv_a)
+        sv_b = urhk_dbSelect(sv_a)
+        print (sv_b)
+        
+        IF (sv_b == 0)  THEN
+        #{
+            STDWFS.LIMIT.INSURANCEID = BANCS.OUTPARAM.INSURANCEID    
+        #}
+        ELSE
+        #{
+            STDWFS.LIMIT.updatestatus = "F"
+            print(STDWFS.LIMIT.updatestatus)
+            sv_q = urhk_TBAF_DispMesg("Insurance ID not Generated")
+            STDWFS.LIMIT.errCode = "Y"
+            GOTO ENDLOOP
+        #}
+        ENDIF
+        
+        sv_s = "INSERT INTO C_INSURANCE(INSURANCE_ID, SOLID, CREATE_DATE, ACCOUNT_NO, POLICY_NO, INSURED_ASSET_DETAILS, INSURED_FROM, INSURED_TO, INSURED_AMOUNT, PREMIUM_AMOUNT, INSURANCE_COMPANY, BRANCH_NAME, RECORD_STATUS, CUSER, CDATE) VALUES('"
+        sv_s = sv_s + STDWFS.LIMIT.INSURANCEID +"','"+ STDWFS.LIMIT.solid +"',TO_DATE('"+ STDWFS.LIMIT.BODDATE +"','DD-MM-YYYY'),'"+ STDWFS.LIMIT.ACCNO +"','"+STDWFS.LIMIT.POLICYNUM+"','"+STDWFS.LIMIT.ASSETTYPE +"',TO_DATE('"+STDWFS.LIMIT.INSUREDFROM +"','DD-MM-YYYY'),TO_DATE('"+STDWFS.LIMIT.INSUREDTILL +"','DD-MM-YYYY'),'" +STDWFS.LIMIT.INSUREDAMOUNT +"','"+STDWFS.LIMIT.PREMIUM +"','"+STDWFS.LIMIT.COMPANY +"','"+STDWFS.LIMIT.BRANCH +"','1','"+STDWFS.LIMIT.userid +"','"+ STDWFS.LIMIT.BODDATE +"')"
+        print(sv_s)
+        sv_d = urhk_dbSql(sv_s)
+        print(sv_d)
+        
+        IF (sv_d == 0) THEN
+        #{
+            sv_q = urhk_dbSql("commit")
+            STDWFS.LIMIT.updatestatus = "S"
+            print(STDWFS.LIMIT.updatestatus)
+            sv_q = urhk_TBAF_DispMesg("Record added successfully. Insurance ID - '"+ STDWFS.LIMIT.INSURANCEID +"'")
+
+            GOTO CLEARFIELD                        
+        #}
+        ELSE
+        #{
+            STDWFS.LIMIT.updatestatus = "F"
+            print(STDWFS.LIMIT.updatestatus)
+            sv_q = urhk_TBAF_DispMesg("Record not added due to error.")
+            STDWFS.LIMIT.errCode = "Y"
+            
+            GOTO ENDLOOP
+        #}
+        ENDIF
+    #}
+    ENDIF
+    
+    #=====================================================
+    #Insert code Mode - M
+    #===================================================== 
+    
+    IF ((STDWFS.LIMIT.MODE == "M") AND (STDWFS.LIMIT.SUBMITFLAG == "Y") AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+    #{
+        IF (STDWFS.LIMIT.STATUS == 21) THEN 
+        #{
+            sv_s = "UPDATE C_INSURANCE SET RECORD_STATUS = '21',ACCOUNT_NO = '"+STDWFS.LIMIT.ACCNO+"',POLICY_NO = '"+STDWFS.LIMIT.POLICYNUM+"',UUSER = '"+STDWFS.LIMIT.userid+"',UDATE = '"+STDWFS.LIMIT.BODDATE+"',INSURED_ASSET_DETAILS = '"+STDWFS.LIMIT.ASSETTYPE+"',INSURED_FROM = TO_DATE('"+STDWFS.LIMIT.INSUREDFROM+"','DD-MM-YYYY'),INSURED_TO = TO_DATE('"+STDWFS.LIMIT.INSUREDTILL+"','DD-MM-YYYY'),INSURED_AMOUNT = '"+STDWFS.LIMIT.INSUREDAMOUNT+"',PREMIUM_AMOUNT = '"+STDWFS.LIMIT.PREMIUM+"',INSURANCE_COMPANY = '"+STDWFS.LIMIT.COMPANY+"',BRANCH_NAME = '"+STDWFS.LIMIT.BRANCH+"' WHERE INSURANCE_ID = '"+STDWFS.LIMIT.INSURANCEID+"'"
+            print(sv_s)
+            sv_d = urhk_dbSql(sv_s)
+            print(sv_d)
+            
+            IF (sv_d == 0) THEN
+            #{
+                sv_q = urhk_dbSql("commit")
+                STDWFS.LIMIT.updatestatus = "S"
+                print(STDWFS.LIMIT.updatestatus)
+                sv_q = urhk_TBAF_DispMesg("Record modified successfully.")
+
+                GOTO CLEARFIELD                        
+            #}
+            ELSE
+            #{
+                STDWFS.LIMIT.updatestatus = "F"
+                print(STDWFS.LIMIT.updatestatus)
+                sv_q = urhk_TBAF_DispMesg("Record not modified due to error.")
+                STDWFS.LIMIT.errCode = "Y"
+                
+                GOTO ENDLOOP
+            #}
+            ENDIF
+        #}
+        ELSE
+        #{      
+            sv_s = "UPDATE C_INSURANCE SET RECORD_STATUS = '11',ACCOUNT_NO = '"+STDWFS.LIMIT.ACCNO+"',POLICY_NO = '"+STDWFS.LIMIT.POLICYNUM+"',MUSER = '"+STDWFS.LIMIT.userid+"',MDATE = '"+STDWFS.LIMIT.BODDATE+"',INSURED_ASSET_DETAILS = '"+STDWFS.LIMIT.ASSETTYPE+"',INSURED_FROM = TO_DATE('"+STDWFS.LIMIT.INSUREDFROM+"','DD-MM-YYYY'),INSURED_TO = TO_DATE('"+STDWFS.LIMIT.INSUREDTILL+"','DD-MM-YYYY'),INSURED_AMOUNT = '"+STDWFS.LIMIT.INSUREDAMOUNT+"',PREMIUM_AMOUNT = '"+STDWFS.LIMIT.PREMIUM+"',INSURANCE_COMPANY = '"+STDWFS.LIMIT.COMPANY+"',BRANCH_NAME = '"+STDWFS.LIMIT.BRANCH+"' WHERE INSURANCE_ID = '"+STDWFS.LIMIT.INSURANCEID+"'"
+            print(sv_s)
+            sv_d = urhk_dbSql(sv_s)
+            print(sv_d)
+            
+            IF (sv_d == 0) THEN
+            #{
+                sv_q = urhk_dbSql("commit")
+                STDWFS.LIMIT.updatestatus = "S"
+                print(STDWFS.LIMIT.updatestatus)
+                sv_q = urhk_TBAF_DispMesg("Record modified successfully.")
+
+                GOTO CLEARFIELD                        
+            #}
+            ELSE
+            #{
+                STDWFS.LIMIT.updatestatus = "F"
+                print(STDWFS.LIMIT.updatestatus)
+                sv_q = urhk_TBAF_DispMesg("Record not modified due to error.")
+                STDWFS.LIMIT.errCode = "Y"
+                
+                GOTO ENDLOOP
+            #}
+            ENDIF
+        #}
+        ENDIF          
+    #}
+    ENDIF
+    
+    #=====================================================
+    #Insert code Mode - U
+    #===================================================== 
+    
+    IF ((STDWFS.LIMIT.MODE == "U") AND (STDWFS.LIMIT.SUBMITFLAG == "Y") AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+    #{
+        sv_s = "UPDATE C_INSURANCE SET RECORD_STATUS = '21',POLICY_NO = '"+STDWFS.LIMIT.POLICYNUM+"',INSURED_FROM = TO_DATE('"+STDWFS.LIMIT.INSUREDFROM+"','DD-MM-YYYY'), INSURED_TO = TO_DATE('"+STDWFS.LIMIT.INSUREDTILL+"','DD-MM-YYYY'),INSURED_AMOUNT = '"+STDWFS.LIMIT.INSUREDAMOUNT+"',PREMIUM_AMOUNT = '"+STDWFS.LIMIT.PREMIUM+"',UUSER = '"+STDWFS.LIMIT.userid+"',UDATE = '"+STDWFS.LIMIT.BODDATE+"' WHERE INSURANCE_ID = '"+STDWFS.LIMIT.INSURANCEID+"'"
+        print(sv_s)
+        sv_d = urhk_dbSql(sv_s)
+        print(sv_d)
+            
+        IF (sv_d == 0) THEN
+        #{
+            sv_q = urhk_dbSql("commit")
+            STDWFS.LIMIT.updatestatus = "S"
+            print(STDWFS.LIMIT.updatestatus)
+            sv_q = urhk_TBAF_DispMesg("Record updated successfully.")
+
+            GOTO CLEARFIELD                        
+        #}
+        ELSE
+        #{
+            STDWFS.LIMIT.updatestatus = "F"
+            print(STDWFS.LIMIT.updatestatus)
+            sv_q = urhk_TBAF_DispMesg("Record not updated due to error.")
+            STDWFS.LIMIT.errCode = "Y"
+                
+            GOTO ENDLOOP
+        #}
+        ENDIF                    
+    #}
+    ENDIF
+    
+    #=====================================================
+    #Insert code Mode - V
+    #===================================================== 
+    
+    IF ((STDWFS.LIMIT.MODE == "V") AND (STDWFS.LIMIT.SUBMITFLAG == "Y") AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+    #{
+        IF (STDWFS.LIMIT.STATUS == 21) THEN 
+        #{
+            sv_s = "UPDATE C_INSURANCE SET RECORD_STATUS = '51',VUUSER = '"+STDWFS.LIMIT.userid+"',VUDATE = '"+STDWFS.LIMIT.BODDATE+"' WHERE INSURANCE_ID = '"+STDWFS.LIMIT.INSURANCEID +"'"
+            print(sv_s)
+            sv_d = urhk_dbSql(sv_s)
+            print(sv_d)
+            
+            IF (sv_d == 0) THEN
+            #{
+                sv_q = urhk_dbSql("commit")
+                STDWFS.LIMIT.updatestatus = "S"
+                print(STDWFS.LIMIT.updatestatus)
+                sv_q = urhk_TBAF_DispMesg("Record verified successfully.")
+
+                GOTO CLEARFIELD                        
+            #}
+            ELSE
+            #{
+                STDWFS.LIMIT.updatestatus = "F"
+                print(STDWFS.LIMIT.updatestatus)
+                sv_q = urhk_TBAF_DispMesg("Record not modified due to error.")
+                STDWFS.LIMIT.errCode = "Y"
+                
+                GOTO ENDLOOP
+            #}
+            ENDIF
+        #}
+        ELSE
+        #{
+            sv_s = "UPDATE C_INSURANCE SET RECORD_STATUS = '51',VUSER = '"+STDWFS.LIMIT.userid+"',VDATE = '"+STDWFS.LIMIT.BODDATE+"' WHERE INSURANCE_ID = '"+STDWFS.LIMIT.INSURANCEID +"'"
+            print(sv_s)
+            sv_d = urhk_dbSql(sv_s)
+            print(sv_d)
+            
+            IF (sv_d == 0) THEN
+            #{
+                sv_q = urhk_dbSql("commit")
+                STDWFS.LIMIT.updatestatus = "S"
+                print(STDWFS.LIMIT.updatestatus)
+                sv_q = urhk_TBAF_DispMesg("Record verified successfully.")
+
+                GOTO CLEARFIELD                        
+            #}
+            ELSE
+            #{
+                STDWFS.LIMIT.updatestatus = "F"
+                print(STDWFS.LIMIT.updatestatus)
+                sv_q = urhk_TBAF_DispMesg("Record not modified due to error.")
+                STDWFS.LIMIT.errCode = "Y"
+                
+                GOTO ENDLOOP
+            #}
+            ENDIF                          
+        #}
+        ENDIF              
+    #}
+    ENDIF
+    
+    #=====================================================
+    #Insert code Mode - D
+    #===================================================== 
+    
+    IF ((STDWFS.LIMIT.MODE == "D") AND (STDWFS.LIMIT.SUBMITFLAG == "Y") AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+    #{
+        sv_s = "UPDATE C_INSURANCE SET RECORD_STATUS = '99',DUSER = '"+STDWFS.LIMIT.userid+"',DDATE = '"+STDWFS.LIMIT.BODDATE+"' WHERE INSURANCE_ID = '"+STDWFS.LIMIT.INSURANCEID +"'"
+        print(sv_s)
+        sv_d = urhk_dbSql(sv_s)
+        print(sv_d)
+        
+        IF (sv_d == 0) THEN
+        #{
+            sv_a = "OLDINSURANCEID|SELECT INSURANCE_ID FROM C_INSURANCE WHERE RENEW_INSURANCE_ID = '"+STDWFS.LIMIT.INSURANCEID+"'"
+            print (sv_a)
+            sv_b = urhk_dbSelect(sv_a)
+            print (sv_b)
+            
+            IF (sv_b == 0)  THEN
+            #{
+                STDWFS.LIMIT.OLDINSURANCEID = BANCS.OUTPARAM.OLDINSURANCEID
+                
+                sv_s = "UPDATE C_INSURANCE SET RENEW_INSURANCE_ID = NULL, RENEW_DATE = NULL, RUSER = NULL, RDATE = NULL, RECORD_STATUS = 51 WHERE INSURANCE_ID = '"+STDWFS.LIMIT.OLDINSURANCEID +"'"
+                print(sv_s)
+                sv_d = urhk_dbSql(sv_s)
+                print(sv_d)
+                
+                IF (sv_d == 0) THEN
+                #{
+                    sv_q = urhk_dbSql("commit")
+                    STDWFS.LIMIT.updatestatus = "S"
+                    print(STDWFS.LIMIT.updatestatus)
+                    sv_q = urhk_TBAF_DispMesg("Record deleted successfully.")
+        
+                    GOTO CLEARFIELD  
+                #}    
+                ELSE
+                #{       
+                    STDWFS.LIMIT.updatestatus = "F"
+                    print(STDWFS.LIMIT.updatestatus)
+                    sv_q = urhk_TBAF_DispMesg("Record not deleted due to error.")
+                    STDWFS.LIMIT.errCode = "Y"
+                    
+                    GOTO ENDLOOP
+                #}
+                ENDIF  
+            #}
+            ELSE
+            #{       
+                sv_q = urhk_dbSql("commit")
+                STDWFS.LIMIT.updatestatus = "S"
+                print(STDWFS.LIMIT.updatestatus)
+                sv_q = urhk_TBAF_DispMesg("Record deleted successfully.")
+        
+                GOTO CLEARFIELD
+            #}
+            ENDIF              
+        #}
+        ELSE
+        #{
+            STDWFS.LIMIT.updatestatus = "F"
+            print(STDWFS.LIMIT.updatestatus)
+            sv_q = urhk_TBAF_DispMesg("Record not deleted due to error.")
+            STDWFS.LIMIT.errCode = "Y"
+            
+            GOTO ENDLOOP
+        #}
+        ENDIF 
+        
+    #}
+    ENDIF
+    
+    #=====================================================
+    #Insert code Mode - C
+    #===================================================== 
+    
+    IF ((STDWFS.LIMIT.MODE == "C") AND (STDWFS.LIMIT.SUBMITFLAG == "Y") AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+    #{
+        sv_s = "UPDATE C_INSURANCE SET RECORD_STATUS = '61',CLSUSER = '"+STDWFS.LIMIT.userid+"',CLSDATE = TO_DATE('"+STDWFS.LIMIT.BODDATE+"','DD-MM-YYYY'),CLOSE_DATE ='"+STDWFS.LIMIT.BODDATE+"',CLOSE_REASON = '"+STDWFS.LIMIT.REASON+"' WHERE INSURANCE_ID = '"+STDWFS.LIMIT.INSURANCEID +"'"
+        print(sv_s)
+        sv_d = urhk_dbSql(sv_s)
+        print(sv_d)
+        
+        IF (sv_d == 0) THEN
+        #{
+            sv_q = urhk_dbSql("commit")
+            STDWFS.LIMIT.updatestatus = "S"
+            print(STDWFS.LIMIT.updatestatus)
+            sv_q = urhk_TBAF_DispMesg("Record closed successfully.")
+
+            GOTO CLEARFIELD                        
+        #}
+        ELSE
+        #{
+            STDWFS.LIMIT.updatestatus = "F"
+            print(STDWFS.LIMIT.updatestatus)
+            sv_q = urhk_TBAF_DispMesg("Record not closed due to error.")
+            STDWFS.LIMIT.errCode = "Y"
+            
+            GOTO ENDLOOP
+        #}
+        ENDIF    
+    #}
+    ENDIF
+    
+    #=====================================================
+    #Insert code Mode - R
+    #===================================================== 
+    
+    IF ((STDWFS.LIMIT.MODE == "R") AND (STDWFS.LIMIT.SUBMITFLAG == "Y") AND (STDWFS.LIMIT.ErrFlg == "N")) THEN
+    #{
+        sv_a = "NEWINSURANCEID|SELECT C_INSUR_SEQ.NEXTVAL FROM DUAL"
+        print (sv_a)
+        sv_b = urhk_dbSelect(sv_a)
+        print (sv_b)
+        
+        IF (sv_b == 0)  THEN
+        #{
+            STDWFS.LIMIT.NEWINSURANCEID = BANCS.OUTPARAM.NEWINSURANCEID    
+        #}
+        ELSE
+        #{
+            STDWFS.LIMIT.updatestatus = "F"
+            print(STDWFS.LIMIT.updatestatus)
+            sv_q = urhk_TBAF_DispMesg("Insurance ID not Generated")
+            STDWFS.LIMIT.errCode = "Y"
+            GOTO ENDLOOP
+        #}
+        ENDIF
+        
+        sv_s = "INSERT INTO C_INSURANCE(INSURANCE_ID, SOLID, CREATE_DATE, ACCOUNT_NO, POLICY_NO, INSURED_ASSET_DETAILS, INSURED_FROM, INSURED_TO, INSURED_AMOUNT, PREMIUM_AMOUNT, INSURANCE_COMPANY, BRANCH_NAME, RECORD_STATUS, CUSER, CDATE) VALUES('"
+        sv_s = sv_s + STDWFS.LIMIT.NEWINSURANCEID +"','"+ STDWFS.LIMIT.solid +"',TO_DATE('"+ STDWFS.LIMIT.BODDATE +"','DD-MM-YYYY'),'"+ STDWFS.LIMIT.ACCNO +"','"+STDWFS.LIMIT.POLICYNUM+"','"+STDWFS.LIMIT.ASSETTYPE +"',TO_DATE('"+STDWFS.LIMIT.INSUREDFROM +"','DD-MM-YYYY'),TO_DATE('"+STDWFS.LIMIT.INSUREDTILL +"','DD-MM-YYYY'),'" +STDWFS.LIMIT.INSUREDAMOUNT +"','"+STDWFS.LIMIT.PREMIUM +"','"+STDWFS.LIMIT.COMPANY +"','"+STDWFS.LIMIT.BRANCH +"','1','"+STDWFS.LIMIT.userid +"','"+ STDWFS.LIMIT.BODDATE +"')"
+        print(sv_s)
+        sv_d = urhk_dbSql(sv_s)
+        print(sv_d)
+        
+        IF (sv_d == 0) THEN
+        #{
+            sv_s = "UPDATE C_INSURANCE SET RECORD_STATUS = '71',RENEW_INSURANCE_ID = '"+STDWFS.LIMIT.NEWINSURANCEID+"',RENEW_DATE = TO_DATE('"+ STDWFS.LIMIT.BODDATE +"','DD-MM-YYYY'),RUSER = '"+STDWFS.LIMIT.userid+"',RDATE = '"+STDWFS.LIMIT.BODDATE+"' WHERE INSURANCE_ID = '"+STDWFS.LIMIT.INSURANCEID+"'"
+            print(sv_s)
+            sv_d = urhk_dbSql(sv_s)
+            print(sv_d)
+        
+            IF (sv_d == 0) THEN
+            #{            
+                sv_q = urhk_dbSql("commit")
+                STDWFS.LIMIT.updatestatus = "S"
+                print(STDWFS.LIMIT.updatestatus)
+                sv_q = urhk_TBAF_DispMesg("Record renewed successfully. Insurance ID - '"+ STDWFS.LIMIT.NEWINSURANCEID +"'")
+            #}
+            ELSE
+            #{        
+                STDWFS.LIMIT.updatestatus = "F"
+                print(STDWFS.LIMIT.updatestatus)
+                sv_q = urhk_TBAF_DispMesg("Record not renewed due to error.")
+                STDWFS.LIMIT.errCode = "Y"
+                
+                GOTO ENDLOOP            
+            #}
+            ENDIF
+            
+            GOTO CLEARFIELD                        
+        #}
+        ELSE
+        #{
+            STDWFS.LIMIT.updatestatus = "F"
+            print(STDWFS.LIMIT.updatestatus)
+            sv_q = urhk_TBAF_DispMesg("Record not renewed due to error.")
+            STDWFS.LIMIT.errCode = "Y"
+            
+            GOTO ENDLOOP
+        #}
+        ENDIF
+    #}
+    ENDIF
+    
+    #======================================================================
+    # Replay Loop
+    #====================================================================== 
+                 
+RPLYLOOP:
+
+    IF (STDWFS.LIMIT.ErrFlg == "Y") THEN
+    #{
+        sv_r = MID$(sv_o,0,2)
+        print(sv_r)
+        sv_r=cint(sv_r)
+        print (sv_r)
+        
+        while(sv_r != 0)
+        #{
+            sv_a = urhk_TBAF_SetReplayKey("bafi2020.datablk.key-nxtfld")
+            sv_r=sv_r-1
+            print(sv_r)
+        do
+            STDWFS.LIMIT.recordcut1 = MID$(sv_o,2,99)
+            STDWFS.WFSINPARAMVAL.ErrorMesg = STDWFS.LIMIT.recordcut1
+            
+            sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_20|" + STDWFS.LIMIT.ACCNAME)            
+            sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_22|" + STDWFS.LIMIT.ASSETNAME)
+            sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_27|" + STDWFS.LIMIT.COMPANYNAME)
+            
+            STDWFS.LIMIT.secondtimeflag="Y"
+            STDWFS.LIMIT.errCode = "Y"
+            GOTO ENDLOOP
+        #}
+    #}
+    ENDIF    
+    
+CLEARFIELD:
+    
+    STDWFS.LIMIT.MODE = ""
+    STDWFS.LIMIT.INSURANCEID = ""
+    STDWFS.LIMIT.ACCNO = ""
+    STDWFS.LIMIT.POLICYNUM = ""
+    STDWFS.LIMIT.ASSETTYPE = ""
+    STDWFS.LIMIT.INSUREDFROM = ""
+    STDWFS.LIMIT.INSUREDTILL = ""
+    STDWFS.LIMIT.INSUREDAMOUNT = ""
+    STDWFS.LIMIT.PREMIUM = ""
+    STDWFS.LIMIT.COMPANY = ""
+    STDWFS.LIMIT.BRANCH = ""
+    STDWFS.LIMIT.REASON = ""
+    STDWFS.LIMIT.ACCNAME = ""
+    STDWFS.LIMIT.COMPANYNAME = ""
+    STDWFS.LIMIT.ASSETNAME = ""
+    
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_1|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_2|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_3|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_4|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_5|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_6|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_7|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_8|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_9|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_10|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_11|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_12|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_13|" + "N")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_20|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_21|" + "")
+    sv_b = urhk_TBAF_SetValue("bafi2020.datablk.field_26|" + "")
+    
+    STDWFS.LIMIT.errCode="Y"
+    STDWFS.LIMIT.modchk="Y" 
+    STDWFS.LIMIT.secondtimeflag="N"    
+                        
+ENDLOOP:
+
+#}
+
+DO
+
+EXITSCRIPT
+trace off
+end-->                                                                       
